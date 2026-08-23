@@ -1,0 +1,11 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "yonyon",
+  "version": "0.1.1",
+  "description": "CLI and MCP access to the public yonyon.ai agent API. Ask the site agent about Yonatan Gross, list portfolio projects, wire up the MCP server, or grab a booking link. No auth, no config.",
+  "author": { "name": "Yonatan Gross", "url": "https://yonyon.ai" },
+  "homepage": "https://yonyon.ai",
+  "repository": "https://github.com/yonatangross/yonyon-cli",
+  "license": "MIT",
+  "keywords": ["yonyon", "mcp", "agent", "cli", "ai", "model-context-protocol", "agent-readiness"]
+}

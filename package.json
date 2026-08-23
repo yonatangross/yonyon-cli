@@ -1,0 +1,55 @@
+{
+  "name": "yonyon",
+  "version": "0.1.1",
+  "description": "Command line client for the public yonyon.ai agent API. Ask questions, list projects, wire up the MCP server, book an intro call. No auth, no config.",
+  "type": "module",
+  "bin": {
+    "yonyon": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "license": "MIT",
+  "author": "Yonatan Gross <yonaigross@gmail.com> (https://yonyon.ai)",
+  "homepage": "https://yonyon.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yonatangross/yonyon-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yonatangross/yonyon-cli/issues"
+  },
+  "keywords": [
+    "mcp",
+    "ai",
+    "agent",
+    "agents",
+    "llm",
+    "cli",
+    "model-context-protocol",
+    "yonyon",
+    "agent-readiness",
+    "nlweb"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

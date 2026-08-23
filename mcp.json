@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "yonyon": {
+      "type": "http",
+      "url": "https://yonyon.ai/api/mcp"
+    }
+  }
+}
