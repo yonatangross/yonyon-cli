@@ -50,8 +50,26 @@ jobs:
             TAG_REF="$GITHUB_REF"
           fi
           TAG="${TAG_REF#refs/tags/}"
-          if [[ ! "$TAG" =~ ^py-v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.+]+)?$ ]]; then
-            echo "::error::Tag '$TAG' must match py-v<semver>"
+          # Supported grammar: final releases only, py-v<MAJOR>.<MINOR>.<PATCH>,
+          # each part 0 or a number without a leading zero. No pre-release or
+          # build suffix (SemVer and PEP 440 spell those differently).
+          RELEASE_RE='^py-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
+          # Self-test the grammar before trusting it.
+          for good in py-v0.1.0 py-v1.2.3 py-v10.20.30 py-v0.0.0; do
+            if [[ ! "$good" =~ $RELEASE_RE ]]; then
+              echo "::error::grammar self-test: valid tag '$good' was rejected"
+              exit 1
+            fi
+          done
+          for bad in py-v01.2.3 py-v1.02.3 py-v1.2.03 'py-v1.2.3-..' py-v1.2.3-rc.1 \
+                     py-v1.2.3+build py-v1.2 py-v1.2.3.4 py-v1..3 v1.2.3 py-v 'py-v1.2.3 ' py-va.b.c; do
+            if [[ "$bad" =~ $RELEASE_RE ]]; then
+              echo "::error::grammar self-test: invalid tag '$bad' was accepted"
+              exit 1
+            fi
+          done
+          if [[ ! "$TAG" =~ $RELEASE_RE ]]; then
+            echo "::error::Tag '$TAG' must match py-v<MAJOR>.<MINOR>.<PATCH> (no leading zeros, no suffix)"
             exit 1
           fi
           VERSION="${TAG#py-v}"
@@ -86,7 +104,7 @@ jobs:
           retention-days: 7
 
   smoke:
-    name: Install wheel + import (offline)
+    name: Install wheel + import smoke
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -99,7 +117,9 @@ jobs:
           name: dist
           path: dist/
       # The generated client has no test suite; this proves the wheel
-      # installs and every endpoint module imports. No network calls.
+      # installs (pip downloads its two dependencies, httpx and attrs) and that
+      # the package, its models and six endpoint modules import. It makes no
+      # calls to the yonyon.ai API.
       - run: |
           python -m pip install --upgrade pip
           pip install dist/*.whl
