@@ -1,0 +1,1503 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "yonyon.ai public API",
+    "version": "1.0.0",
+    "description": "Public, unauthenticated endpoints an AI agent can call on yonyon.ai. No API key, OAuth, or client registration. The only constraint is rate: 10 requests per IP per minute. Versioning: this is major version 1, sent as an `X-API-Version: 1` response header on every endpoint. Deprecation policy: breaking changes ship as a new major version; a version scheduled for removal is announced in advance via `Deprecation` and `Sunset` response headers (RFC 9745 / RFC 8594) and stays available for at least 6 months after its successor is announced. Full policy: https://yonyon.ai/api-deprecation.md.\n\nIdempotency: every endpoint is read-only, so all operations are naturally idempotent. POST /ask and POST /api/v1/batch accept an optional `Idempotency-Key` request header (maximum 128 characters) and echo it back on the response as an `Idempotency-Key` response header, so a retrying agent can confirm the key was honored and correlate the response with its original request.\n\nPagination: GET /api/v1/projects uses cursor-based pagination. Pass `limit` (1-50) and `cursor` query parameters. Responses carry `count`, `total`, `nextCursor`, `next_cursor`, and `has_more`. Pass `next_cursor` back as `cursor` to fetch the next page. Never construct a cursor by hand.\n\nUnmatched /api/* paths return this Error envelope with code=not_found (HTTP 404).",
+    "contact": {
+      "name": "Yonatan Gross",
+      "email": "hi@yonyon.ai",
+      "url": "https://yonyon.ai"
+    },
+    "externalDocs": {
+      "description": "API deprecation policy",
+      "url": "https://yonyon.ai/api-deprecation.md"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://yonyon.ai",
+      "description": "Production. The public API is read-only and anonymous."
+    },
+    {
+      "url": "https://yonyon.ai",
+      "description": "Sandbox (read-only public API; no production side effects). Same origin; see /sandbox.md."
+    }
+  ],
+  "paths": {
+    "/api": {
+      "get": {
+        "operationId": "getApiRoot",
+        "summary": "API root index",
+        "description": "Machine-readable index of the live public API surface: every endpoint with its method, the enforced rate limit, and pointers at this spec, the RFC 9727 api catalog, and the auth documentation. Public, anonymous, CORS-open, and rate-limited through the same limiter as every other endpoint, so the response carries live `RateLimit-*` and `X-RateLimit-*` values rather than only documenting them. Also sends `Link: <https://yonyon.ai/.well-known/api-catalog>; rel=\"api-catalog\"` (RFC 9727). No authentication is required or accepted: this path always answers 200 and never sends a `WWW-Authenticate` challenge. See https://yonyon.ai/auth.md.",
+        "responses": {
+          "200": {
+            "description": "API root index.",
+            "headers": {
+              "X-API-Version": {
+                "$ref": "#/components/headers/X-API-Version"
+              },
+              "RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimit-Limit"
+              },
+              "RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimit-Remaining"
+              },
+              "RateLimit-Reset": {
+                "$ref": "#/components/headers/RateLimit-Reset"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "Link": {
+                "$ref": "#/components/headers/Link"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRoot"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "options": {
+        "operationId": "getApiRootPreflight",
+        "summary": "CORS preflight for api root index",
+        "responses": {
+          "204": {
+            "description": "CORS preflight response (no body)."
+          }
+        }
+      }
+    },
+    "/api/v1": {
+      "get": {
+        "operationId": "getApiVersionRoot",
+        "summary": "Version 1 index",
+        "description": "Machine-readable index of the endpoints in major version 1, with the enforced rate limit and a pointer back to the API root. Public, anonymous, CORS-open, rate-limited. No authentication is required or accepted: this path always answers 200 and never sends a `WWW-Authenticate` challenge. See https://yonyon.ai/auth.md.",
+        "responses": {
+          "200": {
+            "description": "Version 1 index.",
+            "headers": {
+              "X-API-Version": {
+                "$ref": "#/components/headers/X-API-Version"
+              },
+              "RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimit-Limit"
+              },
+              "RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimit-Remaining"
+              },
+              "RateLimit-Reset": {
+                "$ref": "#/components/headers/RateLimit-Reset"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiVersionRoot"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "options": {
+        "operationId": "getApiVersionRootPreflight",
+        "summary": "CORS preflight for version 1 index",
+        "responses": {
+          "204": {
+            "description": "CORS preflight response (no body)."
+          }
+        }
+      }
+    },
+    "/api/chat": {
+      "post": {
+        "operationId": "askYonatan",
+        "summary": "Ask a question about Yonatan Gross (streaming)",
+        "description": "Streams a grounded answer about Yonatan's work, projects, services, and experience. Public and rate-limited (10 requests/IP/minute). No authentication required. Browser-facing: requests must carry an Origin matching the host (CSRF). For server-side agents, prefer POST /ask.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A streamed plain-text answer (concatenate the chunks).",
+            "headers": {
+              "X-API-Version": {
+                "$ref": "#/components/headers/X-API-Version"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimit-Limit"
+              },
+              "RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimit-Remaining"
+              },
+              "RateLimit-Reset": {
+                "$ref": "#/components/headers/RateLimit-Reset"
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatStreamText"
+                },
+                "example": "Yonatan builds production AI systems end to end."
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF rejected (Origin missing or not allowed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ask": {
+      "post": {
+        "operationId": "askNlweb",
+        "summary": "Natural-language query (NLWeb)",
+        "description": "Microsoft NLWeb endpoint. Agent-facing single-shot query over the same RAG + model that powers the site chat. No Origin/CSRF requirement. Returns JSON with `_meta` { response_type, version } by default; returns Server-Sent Events (start / result / complete) when the caller sends `Accept: text/event-stream`, `?streaming=true`, or `{ \"prefer\": { \"streaming\": true } }`. Rate-limited (10 requests/IP/minute). Accepts an optional `Idempotency-Key` request header, echoed on the response.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON answer (default) or text/event-stream when streaming is requested.",
+            "headers": {
+              "X-API-Version": {
+                "$ref": "#/components/headers/X-API-Version"
+              },
+              "Idempotency-Key": {
+                "$ref": "#/components/headers/Idempotency-Key"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimit-Limit"
+              },
+              "RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimit-Remaining"
+              },
+              "RateLimit-Reset": {
+                "$ref": "#/components/headers/RateLimit-Reset"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskResponse"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskStreamEvent"
+                },
+                "example": "event: start\ndata: {\"_meta\":{\"response_type\":\"nlws\",\"version\":\"0.1\"},\"query\":\"who is Yonatan?\"}\n\nevent: result\ndata: {\"content\":\"Yonatan Gross is a senior engineer who ships AI products.\"}\n\nevent: complete\ndata: {\"_meta\":{\"response_type\":\"nlws\",\"version\":\"0.1\"}}\n\n"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "askDescriptor",
+        "summary": "NLWeb endpoint descriptor",
+        "description": "Returns a small JSON descriptor of how to call POST /ask. Fetch this first if you are discovering the endpoint programmatically. Also accepts ?query= for a GET query and ?streaming=true to request SSE.",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "description": "Natural-language question. Same as the POST body field `query`.",
+            "schema": {
+              "type": "string",
+              "maxLength": 2000
+            }
+          },
+          {
+            "name": "streaming",
+            "in": "query",
+            "required": false,
+            "description": "If true, respond with text/event-stream instead of JSON.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Endpoint descriptor.",
+            "headers": {
+              "X-API-Version": {
+                "$ref": "#/components/headers/X-API-Version"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskDescriptor"
+                },
+                "example": {
+                  "@context": "https://schema.org",
+                  "_meta": {
+                    "response_type": "nlws",
+                    "version": "0.1"
+                  },
+                  "query": "",
+                  "answer": "NLWeb natural-language query endpoint for yonyon.ai. POST {\"query\":\"...\"} (or GET /ask?query=) to ask about Yonatan Gross's work, projects, and services. Add Accept: text/event-stream, ?streaming=true, or {\"prefer\":{\"streaming\":true}} for SSE (start/result/complete events). Public, no auth, rate-limited (10 req/IP/min).",
+                  "results": [],
+                  "method": "POST",
+                  "url": "https://yonyon.ai/ask",
+                  "streaming": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "summary": "List Yonatan's portfolio projects",
+        "description": "Returns Yonatan Gross's portfolio projects as JSON. Public, anonymous, CORS-open, rate-limited (10 requests/IP/minute). Supports an optional `?q=` keyword filter (matched against project name + description) and opaque cursor pagination via `?limit=` (1-50) and `?cursor=`. The response carries `count`, `total`, `nextCursor`, `next_cursor`, and `has_more` (`nextCursor` is null on the last page).",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Case-insensitive keyword filter matched against project name and description.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum number of items to return in this page (integer, 1-50). Omit to return the full list.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Opaque base64url cursor returned as next_cursor by a previous response. Do not construct by hand.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-pagination": {
+          "type": "cursor",
+          "cursorParam": "cursor",
+          "limitParam": "limit",
+          "nextCursorField": "next_cursor",
+          "hasMoreField": "has_more"
+        },
+        "responses": {
+          "200": {
+            "description": "A page of projects.",
+            "headers": {
+              "X-API-Version": {
+                "$ref": "#/components/headers/X-API-Version"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimit-Limit"
+              },
+              "RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimit-Remaining"
+              },
+              "RateLimit-Reset": {
+                "$ref": "#/components/headers/RateLimit-Reset"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "options": {
+        "operationId": "listProjectsPreflight",
+        "summary": "CORS preflight for GET /api/v1/projects",
+        "responses": {
+          "204": {
+            "description": "CORS preflight response (no body)."
+          }
+        }
+      }
+    },
+    "/api/v1/batch": {
+      "post": {
+        "operationId": "batch",
+        "summary": "Run up to 10 read operations in one request",
+        "description": "Runs up to 10 read-only operations in a single round-trip. Each operation is `{ \"op\": \"projects\"|\"services\"|\"about\", \"params\": { \"q\"?: string } }`; only `projects` uses `q` (a keyword filter). Every operation is read-only and idempotent, so an optional `Idempotency-Key` request header is accepted and echoed on the response. A per-operation failure (e.g. an unknown op) is reported inline with `status: \"error\"` and never fails the whole batch. Public, anonymous, CORS-open, rate-limited (10 requests/IP/minute).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Per-operation results, in request order.",
+            "headers": {
+              "X-API-Version": {
+                "$ref": "#/components/headers/X-API-Version"
+              },
+              "Idempotency-Key": {
+                "$ref": "#/components/headers/Idempotency-Key"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimit-Limit"
+              },
+              "RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimit-Remaining"
+              },
+              "RateLimit-Reset": {
+                "$ref": "#/components/headers/RateLimit-Reset"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "options": {
+        "operationId": "batchPreflight",
+        "summary": "CORS preflight for POST /api/v1/batch",
+        "responses": {
+          "204": {
+            "description": "CORS preflight response (no body)."
+          }
+        }
+      }
+    },
+    "/api/v1/jobs": {
+      "post": {
+        "operationId": "createJob",
+        "summary": "Start an async read job",
+        "description": "Accepts a read operation and returns 202 Accepted with a Location header and a job_id in the body. Poll GET /api/v1/jobs/{jobId} for the result. The public API is read-only, so the job always succeeds or fails on the poll; there is no queue to cancel.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["op"],
+                "properties": {
+                  "op": {
+                    "type": "string",
+                    "enum": ["projects", "services", "about"],
+                    "description": "Which read to run."
+                  },
+                  "q": {
+                    "type": "string",
+                    "description": "Keyword filter (only applied to the projects op)."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Job accepted. Follow Location or status_url.",
+            "headers": {
+              "Location": {
+                "$ref": "#/components/headers/Location"
+              },
+              "X-API-Version": {
+                "$ref": "#/components/headers/X-API-Version"
+              },
+              "RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimit-Limit"
+              },
+              "RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimit-Remaining"
+              },
+              "RateLimit-Reset": {
+                "$ref": "#/components/headers/RateLimit-Reset"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAccepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "options": {
+        "operationId": "createJobPreflight",
+        "summary": "CORS preflight for POST /api/v1/jobs",
+        "responses": {
+          "204": {
+            "description": "CORS preflight response (no body)."
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{jobId}": {
+      "get": {
+        "operationId": "getJob",
+        "summary": "Poll an async job",
+        "description": "Returns the result of a job started by POST /api/v1/jobs. The job_id is an opaque token from the 202 body.",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "description": "Job identifier returned as job_id by POST /api/v1/jobs.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job result.",
+            "headers": {
+              "X-API-Version": {
+                "$ref": "#/components/headers/X-API-Version"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown job_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "options": {
+        "operationId": "getJobPreflight",
+        "summary": "CORS preflight for GET /api/v1/jobs/{jobId}",
+        "responses": {
+          "204": {
+            "description": "CORS preflight response (no body)."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": false,
+        "description": "Optional client-supplied key (maximum 128 characters) echoed back as an `Idempotency-Key` response header. Every operation on this API is read-only and naturally idempotent; the echo lets a retrying agent correlate responses.",
+        "schema": {
+          "type": "string",
+          "maxLength": 128
+        }
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Maximum number of items to return in this page (integer, 1-50). Omit to return the full list.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        }
+      },
+      "Cursor": {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "Opaque base64url cursor returned as `nextCursor` by a previous response. Do not construct by hand.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "headers": {
+      "X-API-Version": {
+        "description": "Major version of the API serving this response. Currently always \"1\".",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Idempotency-Key": {
+        "description": "Echo of the client-supplied `Idempotency-Key` request header (present only when the request sent one). Truncated to 128 characters.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Deprecation": {
+        "description": "RFC 9745. Present only if this version is deprecated: an IMF-fixdate (or the token \"true\") marking when deprecation took effect.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Sunset": {
+        "description": "RFC 8594. Present only if this version is scheduled for removal: the IMF-fixdate after which it will stop responding.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "X-RateLimit-Limit": {
+        "description": "Requests allowed per window.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "X-RateLimit-Remaining": {
+        "description": "Requests remaining in the current window.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "X-RateLimit-Reset": {
+        "description": "Epoch seconds when the current window resets.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimit-Limit": {
+        "description": "RFC draft-ietf-httpapi-ratelimit-headers. Requests allowed per window.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimit-Remaining": {
+        "description": "RFC draft-ietf-httpapi-ratelimit-headers. Requests remaining in the current window.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimit-Reset": {
+        "description": "RFC draft-ietf-httpapi-ratelimit-headers. Seconds (a delta, not an epoch) until the current window resets.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "Link": {
+        "description": "RFC 8288 web links. The API root sends the RFC 9727 `api-catalog` relation pointing at https://yonyon.ai/.well-known/api-catalog. List endpoints send rel=\"next\" when another page is available.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Location": {
+        "description": "URI of the newly accepted job (GET /api/v1/jobs/{jobId}).",
+        "schema": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "schemas": {
+      "ChatRequest": {
+        "type": "object",
+        "required": ["messages"],
+        "properties": {
+          "messages": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "type": "object",
+              "required": ["role", "content"],
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["user", "assistant"]
+                },
+                "content": {
+                  "type": "string",
+                  "maxLength": 2000
+                }
+              }
+            }
+          }
+        }
+      },
+      "AskRequest": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "The natural-language question."
+          },
+          "prefer": {
+            "type": "object",
+            "properties": {
+              "streaming": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "AskResponse": {
+        "type": "object",
+        "required": ["_meta", "query", "answer", "results"],
+        "properties": {
+          "@context": {
+            "type": "string",
+            "const": "https://schema.org"
+          },
+          "_meta": {
+            "type": "object",
+            "required": ["response_type", "version"],
+            "properties": {
+              "response_type": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              }
+            }
+          },
+          "query": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "string"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "@type": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Project": {
+        "type": "object",
+        "required": ["name", "desc", "url"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Project name."
+          },
+          "desc": {
+            "type": "string",
+            "description": "One-line description."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Canonical project page on yonyon.ai."
+          }
+        }
+      },
+      "ProjectList": {
+        "type": "object",
+        "description": "A cursor-paginated page of projects.",
+        "required": ["count", "total", "nextCursor", "next_cursor", "has_more", "projects"],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "description": "Number of projects in this page."
+          },
+          "total": {
+            "type": "integer",
+            "description": "Total projects across all pages for the current filter."
+          },
+          "nextCursor": {
+            "type": ["string", "null"],
+            "description": "Opaque base64url cursor for the next page, or null when this is the last page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "Snake_case alias of nextCursor, for agents that look up next_cursor."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True when another page is available. Equivalent to next_cursor != null."
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Project"
+            }
+          }
+        }
+      },
+      "BatchRequest": {
+        "type": "object",
+        "required": ["operations"],
+        "properties": {
+          "operations": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "description": "Between 1 and 10 read operations, executed in order.",
+            "items": {
+              "type": "object",
+              "required": ["op"],
+              "properties": {
+                "op": {
+                  "type": "string",
+                  "enum": ["projects", "services", "about"],
+                  "description": "Which read to run."
+                },
+                "params": {
+                  "type": "object",
+                  "properties": {
+                    "q": {
+                      "type": "string",
+                      "description": "Keyword filter (only applied to the `projects` op)."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "BatchResult": {
+        "type": "object",
+        "required": ["op", "status", "data"],
+        "properties": {
+          "op": {
+            "type": "string",
+            "description": "The op that ran (or \"(missing)\" when none was supplied)."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ok", "error"],
+            "description": "Per-operation outcome. An error here does not fail the batch."
+          },
+          "data": {
+            "description": "The op's result payload (shape depends on op), or an { error, code } envelope when status is \"error\"."
+          }
+        }
+      },
+      "BatchResponse": {
+        "type": "object",
+        "required": ["count", "results"],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "description": "Number of operations run (equals results.length)."
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BatchResult"
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "description": "Typed error envelope returned for every non-2xx response.",
+        "required": ["error", "code"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Human-readable message."
+          },
+          "code": {
+            "type": "string",
+            "description": "Stable machine-readable error token.",
+            "enum": [
+              "invalid_request",
+              "invalid_limit",
+              "invalid_cursor",
+              "invalid_operations",
+              "too_many_operations",
+              "unknown_op",
+              "rate_limited",
+              "unavailable",
+              "internal_error",
+              "method_not_allowed",
+              "forbidden",
+              "not_found"
+            ]
+          },
+          "retry_after": {
+            "type": "integer",
+            "description": "Seconds to wait before retrying (present on rate_limited)."
+          },
+          "docs": {
+            "type": "string",
+            "format": "uri",
+            "description": "Link to this OpenAPI document."
+          }
+        }
+      },
+      "Endpoint": {
+        "type": "object",
+        "description": "One endpoint that is live on this API today.",
+        "required": ["method", "path", "description"],
+        "properties": {
+          "method": {
+            "type": "string",
+            "description": "HTTP method the endpoint answers."
+          },
+          "path": {
+            "type": "string",
+            "description": "Path relative to https://yonyon.ai."
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "RateLimitPolicy": {
+        "type": "object",
+        "description": "The rate limit actually enforced on this API, as machine-readable JSON.",
+        "required": ["requests", "window_seconds", "scope"],
+        "properties": {
+          "requests": {
+            "type": "integer",
+            "description": "Requests allowed per window."
+          },
+          "window_seconds": {
+            "type": "integer",
+            "description": "Window length in seconds."
+          },
+          "scope": {
+            "type": "string",
+            "description": "What the window is keyed on.",
+            "enum": ["ip"]
+          }
+        }
+      },
+      "ApiRoot": {
+        "type": "object",
+        "description": "Index of the live public API surface, served at GET /api.",
+        "required": [
+          "name",
+          "version",
+          "code",
+          "auth",
+          "rate_limit",
+          "endpoints",
+          "openapi",
+          "docs"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "description": "Current major version of the REST surface."
+          },
+          "code": {
+            "type": "string",
+            "const": "api_root"
+          },
+          "message": {
+            "type": "string"
+          },
+          "auth": {
+            "type": "string",
+            "description": "Always describes anonymous access. No credential is issued or accepted anywhere on this site."
+          },
+          "auth_docs": {
+            "type": "string",
+            "format": "uri"
+          },
+          "protected_resource_metadata": {
+            "type": "string",
+            "format": "uri"
+          },
+          "rate_limit": {
+            "$ref": "#/components/schemas/RateLimitPolicy"
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Endpoint"
+            }
+          },
+          "openapi": {
+            "type": "string",
+            "format": "uri"
+          },
+          "api_catalog": {
+            "type": "string",
+            "format": "uri"
+          },
+          "docs": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "ApiVersionRoot": {
+        "type": "object",
+        "description": "Index of one major version of the REST surface, served at GET /api/v1.",
+        "required": [
+          "name",
+          "version",
+          "code",
+          "status",
+          "auth",
+          "rate_limit",
+          "endpoints",
+          "openapi",
+          "docs"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string",
+            "const": "api_version_root"
+          },
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "Lifecycle of this version. `stable` until a Deprecation/Sunset header says otherwise.",
+            "enum": ["stable", "deprecated"]
+          },
+          "auth": {
+            "type": "string"
+          },
+          "rate_limit": {
+            "$ref": "#/components/schemas/RateLimitPolicy"
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Endpoint"
+            }
+          },
+          "openapi": {
+            "type": "string",
+            "format": "uri"
+          },
+          "api_root": {
+            "type": "string",
+            "format": "uri"
+          },
+          "docs": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "AskDescriptor": {
+        "type": "object",
+        "title": "AskDescriptor",
+        "description": "Self-describing descriptor for the NLWeb query endpoint. Returned by GET /ask so an agent can learn how to call POST /ask without reading prose documentation.",
+        "required": ["_meta", "answer", "method", "url", "streaming"],
+        "properties": {
+          "@context": {
+            "type": "string",
+            "const": "https://schema.org",
+            "description": "JSON-LD context."
+          },
+          "_meta": {
+            "type": "object",
+            "required": ["response_type", "version"],
+            "description": "NLWeb envelope metadata.",
+            "properties": {
+              "response_type": {
+                "type": "string",
+                "const": "nlws",
+                "description": "Always 'nlws' for this endpoint."
+              },
+              "version": {
+                "type": "string",
+                "description": "NLWeb protocol version.",
+                "examples": ["0.1"]
+              }
+            }
+          },
+          "query": {
+            "type": "string",
+            "description": "Always empty on the descriptor; present so the descriptor and a real answer share one shape.",
+            "examples": [""]
+          },
+          "answer": {
+            "type": "string",
+            "description": "Human and agent readable instructions for calling this endpoint."
+          },
+          "results": {
+            "type": "array",
+            "description": "Always empty on the descriptor.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "@type": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "method": {
+            "type": "string",
+            "enum": ["POST"],
+            "description": "HTTP method to use for a real query."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Absolute URL to POST a query to.",
+            "examples": ["https://yonyon.ai/ask"]
+          },
+          "streaming": {
+            "type": "boolean",
+            "description": "Whether the endpoint can stream Server-Sent Events."
+          }
+        }
+      },
+      "AskStreamStart": {
+        "type": "object",
+        "title": "AskStreamStart",
+        "description": "Payload of the `start` event. Echoes the accepted query.",
+        "required": ["_meta", "query"],
+        "properties": {
+          "_meta": {
+            "type": "object",
+            "required": ["response_type", "version"],
+            "description": "NLWeb envelope metadata.",
+            "properties": {
+              "response_type": {
+                "type": "string",
+                "const": "nlws",
+                "description": "Always 'nlws' for this endpoint."
+              },
+              "version": {
+                "type": "string",
+                "description": "NLWeb protocol version.",
+                "examples": ["0.1"]
+              }
+            }
+          },
+          "query": {
+            "type": "string",
+            "description": "The query as the server parsed it."
+          }
+        }
+      },
+      "AskStreamResult": {
+        "type": "object",
+        "title": "AskStreamResult",
+        "description": "Payload of a `result` event. Emitted repeatedly; concatenate `content` across every result event in order to rebuild the full answer.",
+        "required": ["content"],
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "One chunk of the answer text."
+          }
+        }
+      },
+      "AskStreamComplete": {
+        "type": "object",
+        "title": "AskStreamComplete",
+        "description": "Payload of the terminal `complete` event. No further events follow.",
+        "required": ["_meta"],
+        "properties": {
+          "_meta": {
+            "type": "object",
+            "required": ["response_type", "version"],
+            "description": "NLWeb envelope metadata.",
+            "properties": {
+              "response_type": {
+                "type": "string",
+                "const": "nlws",
+                "description": "Always 'nlws' for this endpoint."
+              },
+              "version": {
+                "type": "string",
+                "description": "NLWeb protocol version.",
+                "examples": ["0.1"]
+              }
+            }
+          }
+        }
+      },
+      "AskStreamEvent": {
+        "title": "AskStreamEvent",
+        "description": "The JSON object carried in the `data:` field of one Server-Sent Event. The SSE `event:` field names which variant it is: `start`, `result`, or `complete`.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AskStreamStart"
+          },
+          {
+            "$ref": "#/components/schemas/AskStreamResult"
+          },
+          {
+            "$ref": "#/components/schemas/AskStreamComplete"
+          }
+        ]
+      },
+      "ChatStreamText": {
+        "type": "string",
+        "title": "ChatStreamText",
+        "contentMediaType": "text/plain",
+        "description": "The answer, streamed as plain UTF-8 text chunks over a single response body. There is no framing: concatenate the chunks in arrival order to get the complete answer. The stream ends when the body closes.",
+        "examples": ["Yonatan builds production AI systems end to end."]
+      },
+      "JobAccepted": {
+        "type": "object",
+        "description": "202 Accepted body for POST /api/v1/jobs.",
+        "required": ["job_id", "status", "status_url"],
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "description": "Opaque job identifier. Pass it to GET /api/v1/jobs/{jobId}."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["accepted"],
+            "description": "Always accepted on 202."
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Absolute URL to poll for the result."
+          },
+          "op": {
+            "type": "string",
+            "enum": ["projects", "services", "about"]
+          }
+        }
+      },
+      "Job": {
+        "type": "object",
+        "description": "Polled job result from GET /api/v1/jobs/{jobId}.",
+        "required": ["job_id", "status", "op", "result"],
+        "properties": {
+          "job_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["succeeded"],
+            "description": "Jobs on this API complete on the first poll."
+          },
+          "op": {
+            "type": "string",
+            "enum": ["projects", "services", "about"]
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "The read result (projects list, services markdown, or about markdown)."
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Malformed request (invalid JSON, validation failure, or blocked content).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "Rate limit exceeded (10 requests/IP/minute).",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds to wait before retrying.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          "X-RateLimit-Limit": {
+            "$ref": "#/components/headers/X-RateLimit-Limit"
+          },
+          "X-RateLimit-Remaining": {
+            "$ref": "#/components/headers/X-RateLimit-Remaining"
+          },
+          "X-RateLimit-Reset": {
+            "$ref": "#/components/headers/X-RateLimit-Reset"
+          },
+          "RateLimit-Limit": {
+            "$ref": "#/components/headers/RateLimit-Limit"
+          },
+          "RateLimit-Remaining": {
+            "$ref": "#/components/headers/RateLimit-Remaining"
+          },
+          "RateLimit-Reset": {
+            "$ref": "#/components/headers/RateLimit-Reset"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unavailable": {
+        "description": "The assistant is temporarily unavailable (model backend not configured/reachable).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}
