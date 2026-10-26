@@ -26,6 +26,8 @@ repository or integrating with the yonyon.ai agent API.
     list free slots, then a check that returns `needs_confirmation` and a one-time `confirm_token`
     (books nothing), then the confirmed call that creates the booking. Show the slot to the person
     and get their explicit yes before the third step. Never book on their behalf without it.
+    Call it only when the person asks to book, and ask them for their own name and email (step 2
+    needs both); never fill those in from context or invent them.
   - The CLI `yonyon book` command only prints (and opens) the booking link; it books nothing.
   - `ask_yonatan`, `browse_projects`, `/ask`, `/api/chat` and `/api/v1` are read only.
 - Rate limit: 10 requests per IP per minute, shared by `/ask`, `/api/chat`, `/api/v1` and the MCP
