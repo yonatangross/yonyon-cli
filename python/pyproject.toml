@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Official Python client for the public yonyon.ai agent API (generated from https://yonyon.ai/.well-known/openapi.json)."
 authors = [{ name = "Yonatan Gross" }]
 license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 readme = "README.md"
 keywords = ["yonyon", "agent", "api", "sdk", "openapi"]
@@ -23,7 +24,7 @@ module-name = "yonyon"
 module-root = ""
 
 [build-system]
-requires = ["uv_build>=0.12.0,<0.13.0"]
+requires = ["uv_build>=0.12.0,<0.14.0"]
 build-backend = "uv_build"
 
 [tool.ruff]
