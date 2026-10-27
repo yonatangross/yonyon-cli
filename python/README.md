@@ -35,6 +35,11 @@ five CORS preflight modules (`*_preflight`), which have only `sync_detailed` and
 live in `yonyon.api.default` (`ask_nlweb`, `ask_yonatan`, `list_projects`, `batch`, `create_job`,
 `get_job`, and the index routes); models live in `yonyon.models`.
 
+Server-side callers: use `ask_nlweb` (`POST /ask`) to ask questions. `ask_yonatan` (`POST /api/chat`)
+is the browser chat stream and checks the `Origin` header, so a default `Client` gets HTTP 403 from it.
+If you need the stream, send the site as the Origin, as the npm CLI does:
+`Client(base_url="https://yonyon.ai", headers={"Origin": "https://yonyon.ai"})`.
+
 API docs: https://yonyon.ai/developers. The npm CLI in the parent folder covers the same API.
 
 ## Regenerate
