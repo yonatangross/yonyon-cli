@@ -35,6 +35,14 @@ five CORS preflight modules (`*_preflight`), which have only `sync_detailed` and
 live in `yonyon.api.default` (`ask_nlweb`, `ask_yonatan`, `list_projects`, `batch`, `create_job`,
 `get_job`, and the index routes); models live in `yonyon.models`.
 
+Server-side callers: use `ask_nlweb` (`POST /ask`) to ask questions. `ask_yonatan` (`POST /api/chat`)
+is the browser chat endpoint and checks the `Origin` header, so a default `Client` gets HTTP 403 from it.
+To call it anyway, set `Origin` to the same value as `base_url`, as the npm CLI does:
+`Client(base_url="https://yonyon.ai", headers={"Origin": "https://yonyon.ai"})`. This client reads the
+whole response and returns the answer as plain text; it does not stream. For token-by-token output,
+call the endpoint yourself with httpx `client.stream("POST", "/api/chat", ...)` on
+`client.get_httpx_client()`.
+
 API docs: https://yonyon.ai/developers. The npm CLI in the parent folder covers the same API.
 
 ## Regenerate
